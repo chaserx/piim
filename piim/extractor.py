@@ -77,5 +77,62 @@ def _extract_native(page: fitz.Page, page_num: int) -> list[TextBlock]:
 
 
 def _extract_ocr(page: fitz.Page, page_num: int) -> list[TextBlock]:
-    """Extract text blocks using EasyOCR. Stub -- implemented in Task 4."""
-    return []
+    """Extract text blocks using EasyOCR. Returns empty list if unavailable."""
+    raw_blocks = _run_ocr(page, page_num)
+    # Filter low-confidence OCR results
+    return [b for b in raw_blocks if b.confidence >= OCR_CONFIDENCE_THRESHOLD]
+
+
+# Module-level cached EasyOCR reader (lazy-initialized)
+_ocr_reader = None
+
+
+def _get_ocr_reader():
+    """Get or create the cached EasyOCR Reader instance."""
+    global _ocr_reader
+    if _ocr_reader is None:
+        try:
+            import easyocr
+        except ImportError:
+            return None
+        _ocr_reader = easyocr.Reader(["en"], verbose=False)
+    return _ocr_reader
+
+
+def _run_ocr(page: fitz.Page, page_num: int) -> list[TextBlock]:
+    """Run EasyOCR on a rendered page image."""
+    reader = _get_ocr_reader()
+    if reader is None:
+        logger.warning("EasyOCR not available, skipping OCR for page %d", page_num)
+        return []
+
+    dpi = 300
+    pix = page.get_pixmap(dpi=dpi)
+    img_bytes = pix.tobytes("png")
+
+    results = reader.readtext(img_bytes)
+
+    blocks: list[TextBlock] = []
+    for bbox_raw, text, confidence in results:
+        bbox = _scale_ocr_bbox(bbox_raw, dpi)
+        blocks.append(
+            TextBlock(
+                text=text,
+                bbox=bbox,
+                page_number=page_num,
+                source="ocr",
+                confidence=confidence,
+            )
+        )
+
+    return blocks
+
+
+def _scale_ocr_bbox(
+    bbox_raw: list, dpi: int = 300
+) -> tuple[float, float, float, float]:
+    """Convert EasyOCR pixel coordinates to PDF points."""
+    scale = 72.0 / dpi
+    xs = [pt[0] for pt in bbox_raw]
+    ys = [pt[1] for pt in bbox_raw]
+    return (min(xs) * scale, min(ys) * scale, max(xs) * scale, max(ys) * scale)
