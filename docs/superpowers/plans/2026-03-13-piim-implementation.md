@@ -583,26 +583,38 @@ Replace `_extract_ocr` in `piim/extractor.py`:
 ```python
 def _extract_ocr(page: fitz.Page, page_num: int) -> list[TextBlock]:
     """Extract text blocks using EasyOCR. Returns empty list if unavailable."""
-    try:
-        import easyocr
-    except ImportError:
-        logger.warning("EasyOCR not available, skipping OCR for page %d", page_num)
-        return []
-
     raw_blocks = _run_ocr(page, page_num)
     # Filter low-confidence OCR results
     return [b for b in raw_blocks if b.confidence >= OCR_CONFIDENCE_THRESHOLD]
 
 
+# Module-level cached EasyOCR reader (lazy-initialized)
+_ocr_reader = None
+
+
+def _get_ocr_reader():
+    """Get or create the cached EasyOCR Reader instance."""
+    global _ocr_reader
+    if _ocr_reader is None:
+        try:
+            import easyocr
+        except ImportError:
+            return None
+        _ocr_reader = easyocr.Reader(["en"], verbose=False)
+    return _ocr_reader
+
+
 def _run_ocr(page: fitz.Page, page_num: int) -> list[TextBlock]:
     """Run EasyOCR on a rendered page image."""
-    import easyocr
+    reader = _get_ocr_reader()
+    if reader is None:
+        logger.warning("EasyOCR not available, skipping OCR for page %d", page_num)
+        return []
 
     dpi = 300
     pix = page.get_pixmap(dpi=dpi)
     img_bytes = pix.tobytes("png")
 
-    reader = easyocr.Reader(["en"], verbose=False)
     results = reader.readtext(img_bytes)
 
     blocks: list[TextBlock] = []
@@ -1107,6 +1119,14 @@ class TestDeduplicateEntities:
         assert len(result) == 1
         assert result[0].text == "John Smith"
 
+    def test_same_bbox_different_pages_keeps_both(self):
+        entities = [
+            PiiEntity("PERSON", "John", 0.9, [(10, 10, 50, 20)], 0),
+            PiiEntity("PERSON", "John", 0.9, [(10, 10, 50, 20)], 1),
+        ]
+        result = deduplicate_entities(entities)
+        assert len(result) == 2
+
 
 class TestBlackBoxMasking:
     def test_adds_redaction_annotations(self):
@@ -1216,7 +1236,11 @@ def deduplicate_entities(entities: list[PiiEntity]) -> list[PiiEntity]:
 
     kept: list[PiiEntity] = []
     for entity in sorted_entities:
-        if not any(_bboxes_overlap(entity.bboxes, k.bboxes) for k in kept):
+        if not any(
+            entity.page_number == k.page_number
+            and _bboxes_overlap(entity.bboxes, k.bboxes)
+            for k in kept
+        ):
             kept.append(entity)
 
     return kept
