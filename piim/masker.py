@@ -91,11 +91,71 @@ def _apply_blackbox(page: fitz.Page, entities: list[PiiEntity]) -> None:
 def _apply_fake(
     page: fitz.Page,
     entities: list[PiiEntity],
-    fake: object,
+    fake,
     value_map: dict[str, str],
 ) -> None:
-    """Apply fake data replacement to a page. Implemented in Task 8."""
-    raise NotImplementedError("Fake data mode not yet implemented")
+    """Apply fake data replacement to a page.
+
+    Args:
+        page: PyMuPDF page to modify.
+        entities: PII entities on this page.
+        fake: Shared Faker instance (seeded once in apply_masks).
+        value_map: Shared mapping of original->fake values across pages.
+    """
+    # Phase 1: Add white redactions for all entities
+    entity_fakes: list[tuple[PiiEntity, str]] = []
+    for entity in entities:
+        if entity.text not in value_map:
+            value_map[entity.text] = _generate_fake(fake, entity.entity_type)
+        fake_text = value_map[entity.text]
+        entity_fakes.append((entity, fake_text))
+
+        for bbox in entity.bboxes:
+            page.add_redact_annot(fitz.Rect(bbox), fill=(1, 1, 1))
+
+    # Phase 2: Apply all redactions at once
+    page.apply_redactions()
+
+    # Phase 3: Insert fake text
+    for entity, fake_text in entity_fakes:
+        fake_lines = fake_text.split("\n") if "\n" in fake_text else [fake_text]
+
+        for i, bbox in enumerate(entity.bboxes):
+            if i < len(fake_lines):
+                line_text = fake_lines[i]
+            elif i == len(entity.bboxes) - 1 and len(fake_lines) > len(
+                entity.bboxes
+            ):
+                # Join excess lines into last bbox
+                line_text = " ".join(fake_lines[i:])
+            else:
+                continue
+
+            bbox_height = bbox[3] - bbox[1]
+            bbox_width = bbox[2] - bbox[0]
+            fontsize = bbox_height * 0.8
+
+            # Scale down font if text overflows
+            text_width = fitz.get_text_length(line_text, fontsize=fontsize)
+            if text_width > bbox_width and text_width > 0:
+                fontsize *= bbox_width / text_width
+
+            point = fitz.Point(bbox[0], bbox[3] - bbox_height * 0.15)
+            page.insert_text(point, line_text, fontsize=fontsize)
+
+
+def _generate_fake(fake, entity_type: str) -> str:
+    """Generate a fake value for the given entity type."""
+    generators = {
+        "PERSON": fake.name,
+        "LOCATION": fake.address,
+        "PHONE_NUMBER": fake.phone_number,
+        "EMAIL_ADDRESS": fake.email,
+        "CREDIT_CARD": fake.credit_card_number,
+        "US_BANK_NUMBER": fake.bban,
+    }
+    generator = generators.get(entity_type, fake.name)
+    return generator()
 
 
 def _bboxes_overlap(a_bboxes: list[Bbox], b_bboxes: list[Bbox]) -> bool:
