@@ -116,9 +116,10 @@ class PiiDetector(ABC):
 2. For each page, concatenate text blocks with `"\n"` as delimiter, building an offset map: a list of `(start_offset, end_offset, TextBlock)` tuples.
 3. Run `AnalyzerEngine.analyze()` on the concatenated string.
 4. For each Presidio result, find the overlapping TextBlock(s) via the offset map.
-5. Use `page.search_for(entity_text)` to get precise bounding boxes for the detected PII substring within the page. This gives character-level precision rather than block-level — avoiding over-redaction of surrounding text.
-6. **Disambiguation for repeated text:** `search_for()` returns all occurrences on the page. Select the result whose bbox overlaps or is nearest to the parent TextBlock's bbox (by centroid distance). Each detected PII entity maps to exactly one `search_for()` result.
-7. If `search_for()` returns no results (e.g., OCR text doesn't exactly match), fall back to the TextBlock's full bbox.
+5. The entity text is derived from the concatenated string via Presidio's character offsets (`concatenated_text[result.start:result.end]`). If the text contains the `"\n"` delimiter introduced by concatenation, the newline is replaced with a space before calling `search_for()`, since `search_for()` operates on rendered page text which uses spaces between blocks.
+6. Use `page.search_for(entity_text)` to get precise bounding boxes for the detected PII substring within the page. This gives character-level precision rather than block-level — avoiding over-redaction of surrounding text.
+7. **Disambiguation for repeated text:** `search_for()` returns all occurrences on the page. Select the result whose bbox overlaps or is nearest to the parent TextBlock's bbox (by centroid distance). Each detected PII entity maps to exactly one `search_for()` result.
+8. If `search_for()` returns no results (e.g., OCR text doesn't exactly match), fall back to the TextBlock's full bbox.
 
 ### Supported PII Types (Initial Version)
 
@@ -132,6 +133,8 @@ class PiiDetector(ABC):
 | Account numbers | `US_BANK_NUMBER` |
 
 Architecture supports adding more types by extending the entity list. SSNs (`US_SSN`) are a natural addition but excluded from v1 since the primary use case is receipts, which typically don't contain SSNs.
+
+**Known limitation:** Presidio's `LOCATION` recognizer captures geographic names (cities, states, countries) but may not detect full street addresses (e.g., "123 Main St, Springfield, IL 62701") as a single entity. For v1, partial address detection is accepted. A custom Presidio recognizer for US street addresses (using regex patterns for street number + name patterns) can be added as a future enhancement.
 
 ### Extensibility
 
@@ -154,6 +157,10 @@ A `--min-confidence` CLI flag (default 0.5) filters out low-confidence detection
 ## Stage 3: Masking (`masker.py`)
 
 Two modes, selected via `--mask-type` CLI flag.
+
+### Overlapping Entity Deduplication
+
+Before masking, overlapping PII entities on the same page are deduplicated. If two entities share overlapping bounding boxes, the entity with the higher confidence score is kept and the other is discarded. If scores are equal, the entity with the larger bounding box span is preferred.
 
 ### Redaction Ordering
 
@@ -199,7 +206,7 @@ For fake data mode, `Faker` is seeded with a fixed default seed (`0`) for reprod
 
 - Strip document metadata (author, creator, producer, title) via `doc.set_metadata({})` to prevent PII leaking through metadata
 - Save with `doc.save(output_path, garbage=4, deflate=True)` — `garbage=4` removes unused objects, `deflate` compresses
-- For `--in-place` mode, save to a temp file first, then atomically replace the original
+- For `--in-place` mode, save to a temp file in the same directory as the original (via `tempfile.NamedTemporaryFile(dir=original_dir)`) to ensure `os.replace()` is atomic on the same filesystem. If the replace fails, the temp file is preserved and the error message includes the temp file path so the user can recover the redacted output
 
 ## CLI Interface (`cli.py`)
 
@@ -226,6 +233,8 @@ Options:
 **Multiple file support:** Accepts multiple paths, processes sequentially.
 
 **Output directory creation:** If `--output-dir` does not exist, it is created (including intermediate directories).
+
+**Performance expectations:** The tool processes all pages sequentially without parallelism. Users should expect approximately 2-5 seconds per page for OCR processing. No page count limit is enforced, but documents over ~50 pages may require significant processing time.
 
 ### Logging
 
