@@ -3,6 +3,7 @@ name = "piim"
 version = "0.1.0"
 description = "Detect and mask PII in PDF files"
 readme = "README.md"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.13"
 dependencies = [
     "PyMuPDF>=1.25.0",
