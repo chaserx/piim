@@ -48,7 +48,7 @@ uv sync
 
 # Download the spaCy language model
 
-python -m spacy download en_core_web_lg
+uv run -- spacy download en_core_web_lg
 ```
 
 ## Usage
