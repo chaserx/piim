@@ -113,7 +113,7 @@ Each stage depends only on the shared data types in `models.py`. The detector us
 ## Testing
 
 ```bash
-pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 
