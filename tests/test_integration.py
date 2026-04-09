@@ -157,6 +157,7 @@ class TestMetadataStripping:
         if os.path.exists(output_file):
             doc = fitz.open(output_file)
             meta = doc.metadata
+            assert meta is not None
             assert meta.get("author", "") == ""
             assert meta.get("title", "") == ""
             doc.close()

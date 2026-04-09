@@ -30,6 +30,7 @@ class TestExporter:
 
         result = fitz.open(output)
         meta = result.metadata
+        assert meta is not None
         assert meta.get("author", "") == ""
         assert meta.get("title", "") == ""
         assert meta.get("creator", "") == ""
@@ -62,7 +63,9 @@ class TestExporter:
         # File should still exist and be valid
         assert os.path.exists(original)
         result = fitz.open(original)
-        assert result.metadata.get("author", "") == ""
+        meta = result.metadata
+        assert meta is not None
+        assert meta.get("author", "") == ""
         result.close()
 
     def test_creates_output_dir_if_needed(self, tmp_path):
