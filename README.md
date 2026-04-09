@@ -55,33 +55,33 @@ uv run -- spacy download en_core_web_lg
 
 ```bash
 # Basic redaction (black boxes, output to same directory with _redacted suffix)
-piim document.pdf
+uv run piim document.pdf
 
 # Fake data replacement
-piim document.pdf --mask-type fake
+uv run piim document.pdf --mask-type fake
 
 # Process multiple files to a specific directory
-piim file1.pdf file2.pdf --output-dir ./redacted/
+uv run piim file1.pdf file2.pdf --output-dir ./redacted/
 
 # In-place redaction (overwrites originals)
-piim document.pdf --in-place
+uv run piim document.pdf --in-place
 
 # Tune detection sensitivity and see what was found
-piim document.pdf --min-confidence 0.7 --verbose
+uv run piim document.pdf --min-confidence 0.7 --verbose
 ```
 
 ### Options
 
-| Flag | Description | Default |
-|---|---|---|
-| `INPUT` | One or more PDF files | (required) |
-| `--mask-type {blackbox,fake}` | Redaction method | `blackbox` |
-| `--in-place` | Overwrite original files | off |
-| `--output-dir DIR` | Output directory (created if needed) | same as input |
-| `--suffix TEXT` | Output filename suffix | `_redacted` |
-| `--min-confidence FLOAT` | PII detection threshold (0.0–1.0) | `0.5` |
-| `--seed INT` | Faker seed for reproducible fake data | `0` |
-| `--verbose` | Log detected entities with scores | off |
+| Flag                          | Description                           | Default       |
+|-------------------------------|---------------------------------------|---------------|
+| `INPUT`                       | One or more PDF files                 | (required)    |
+| `--mask-type {blackbox,fake}` | Redaction method                      | `blackbox`    |
+| `--in-place`                  | Overwrite original files              | off           |
+| `--output-dir DIR`            | Output directory (created if needed)  | same as input |
+| `--suffix TEXT`               | Output filename suffix                | `_redacted`   |
+| `--min-confidence FLOAT`      | PII detection threshold (0.0–1.0)     | `0.5`         |
+| `--seed INT`                  | Faker seed for reproducible fake data | `0`           |
+| `--verbose`                   | Log detected entities with scores     | off           |
 
 `--in-place` is mutually exclusive with `--output-dir` and `--suffix`.
 
