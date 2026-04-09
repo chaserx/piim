@@ -3,7 +3,6 @@
 import os
 
 import fitz
-import pytest
 
 from piim.exporter import export_pdf
 
@@ -54,8 +53,6 @@ class TestExporter:
         doc.new_page()
         doc.save(original)
         doc.close()
-
-        original_size = os.path.getsize(original)
 
         # Open, modify, and export in-place
         doc = self._make_doc_with_metadata()

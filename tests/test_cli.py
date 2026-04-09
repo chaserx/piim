@@ -1,9 +1,7 @@
 """Tests for CLI argument parsing and pipeline."""
 
 import os
-from unittest.mock import MagicMock, patch
 
-import fitz
 import pytest
 
 from piim.cli import build_parser, main

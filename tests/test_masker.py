@@ -1,8 +1,7 @@
 """Tests for PII masking."""
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
-import pytest
 
 from piim.masker import apply_masks, deduplicate_entities
 from piim.models import PiiEntity

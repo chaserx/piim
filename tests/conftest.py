@@ -3,7 +3,6 @@
 import fitz
 import pytest
 
-from piim.models import TextBlock
 
 
 @pytest.fixture
