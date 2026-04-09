@@ -81,9 +81,7 @@ def _validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) ->
         parser.error("cannot use --in-place with --suffix")
 
 
-def _resolve_output_path(
-    input_path: str, args: argparse.Namespace
-) -> str:
+def _resolve_output_path(input_path: str, args: argparse.Namespace) -> str:
     """Determine the output file path for a given input."""
     base, ext = os.path.splitext(os.path.basename(input_path))
     output_name = f"{base}{args.suffix}{ext}"

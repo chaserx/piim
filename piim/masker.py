@@ -123,9 +123,7 @@ def _apply_fake(
         for i, bbox in enumerate(entity.bboxes):
             if i < len(fake_lines):
                 line_text = fake_lines[i]
-            elif i == len(entity.bboxes) - 1 and len(fake_lines) > len(
-                entity.bboxes
-            ):
+            elif i == len(entity.bboxes) - 1 and len(fake_lines) > len(entity.bboxes):
                 # Join excess lines into last bbox
                 line_text = " ".join(fake_lines[i:])
             else:

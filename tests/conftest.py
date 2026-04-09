@@ -4,7 +4,6 @@ import fitz
 import pytest
 
 
-
 @pytest.fixture
 def native_text_pdf(tmp_path) -> str:
     """Create a simple PDF with selectable text containing PII."""

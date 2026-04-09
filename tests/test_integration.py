@@ -41,12 +41,16 @@ class TestBlackboxIntegration:
     def test_redacts_pii_from_text_pdf(self, pii_pdf, tmp_path):
         output_dir = str(tmp_path / "output")
 
-        exit_code = main([
-            "--output-dir", output_dir,
-            "--mask-type", "blackbox",
-            "--verbose",
-            pii_pdf,
-        ])
+        exit_code = main(
+            [
+                "--output-dir",
+                output_dir,
+                "--mask-type",
+                "blackbox",
+                "--verbose",
+                pii_pdf,
+            ]
+        )
 
         assert exit_code == 0
 
@@ -72,13 +76,18 @@ class TestFakeDataIntegration:
     def test_replaces_pii_with_fake_data(self, pii_pdf, tmp_path):
         output_dir = str(tmp_path / "output")
 
-        exit_code = main([
-            "--output-dir", output_dir,
-            "--mask-type", "fake",
-            "--seed", "42",
-            "--verbose",
-            pii_pdf,
-        ])
+        exit_code = main(
+            [
+                "--output-dir",
+                output_dir,
+                "--mask-type",
+                "fake",
+                "--seed",
+                "42",
+                "--verbose",
+                pii_pdf,
+            ]
+        )
 
         assert exit_code == 0
 

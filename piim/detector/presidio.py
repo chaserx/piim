@@ -103,9 +103,7 @@ class PresidioDetector(PiiDetector):
                 continue  # Skip entities with no matching blocks
 
             # Try precise bbox via search_for, fall back to block-level
-            bboxes = self._refine_bboxes(
-                entity_text_clean, parent_blocks, page
-            )
+            bboxes = self._refine_bboxes(entity_text_clean, parent_blocks, page)
             if not bboxes:
                 continue  # Skip entities we can't locate
 
@@ -153,12 +151,12 @@ class PresidioDetector(PiiDetector):
             return [(r.x0, r.y0, r.x1, r.y1)]
 
         # Disambiguate: pick the result nearest to the parent block centroid
-        parent_cx = sum(
-            (b.bbox[0] + b.bbox[2]) / 2 for b in parent_blocks
-        ) / len(parent_blocks)
-        parent_cy = sum(
-            (b.bbox[1] + b.bbox[3]) / 2 for b in parent_blocks
-        ) / len(parent_blocks)
+        parent_cx = sum((b.bbox[0] + b.bbox[2]) / 2 for b in parent_blocks) / len(
+            parent_blocks
+        )
+        parent_cy = sum((b.bbox[1] + b.bbox[3]) / 2 for b in parent_blocks) / len(
+            parent_blocks
+        )
 
         best = min(
             search_results,

@@ -76,9 +76,7 @@ class TestPipeline:
         output = str(tmp_path / "out")
         os.makedirs(output)
 
-        exit_code = main(
-            ["--output-dir", output, "--verbose", native_text_pdf]
-        )
+        exit_code = main(["--output-dir", output, "--verbose", native_text_pdf])
 
         assert exit_code == 0
         # Verify output file was created
