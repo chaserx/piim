@@ -112,10 +112,35 @@ Each stage depends only on the shared data types in `models.py`. The detector us
 
 ## Testing
 
+### Linting
+
+```bash
+uv run ruff --fix
+```
+
+### Formatting
+
+**Format check**
+```bash
+uv run ruff format --check .
+```
+
+**Format fix**
+```bash
+uv run ruff format
+```
+
+### Tests
+
 ```bash
 uv run pytest tests/ -v
 ```
 
+### Type Checking
+
+```bash
+uv run ty check
+```
 
 ## Limitations
 
